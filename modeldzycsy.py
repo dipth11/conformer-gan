@@ -594,7 +594,7 @@ class NetG(nn.Module):
     def forward(self, x, c):
         x = self.fc(x)  # 128 * 8 * 8
         x = x.view(x.size(0), 2 * self.ngf, 8, 8)
-
+        print('!!!!!!', x.shape)
         x = self.conv1(x)
         x_t = self.linear1(c)
 
