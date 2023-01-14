@@ -6,7 +6,7 @@ GPU_ID: 0
 WORKERS: 1
 
 
-B_VALIDATION: True # True  # False
+B_VALIDATION: False # True  # False
 RESTORE: False
 loss: 'hinge'
 
