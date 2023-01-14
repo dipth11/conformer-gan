@@ -496,7 +496,7 @@ class NetG(nn.Module):
         # 1 stage
         stage_1_channel = 256
         trans_dw_stride = patch_size // 4
-        self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
+        self.conv_1 = ConvBlock(inplanes=128, outplanes=stage_1_channel, res_conv=True, stride=1)
         # self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
         self.trans_1 = Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                              qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=self.trans_dpr[0],
@@ -592,11 +592,8 @@ class NetG(nn.Module):
             nn.init.constant_(m.bias, 0.)
 
     def forward(self, x, c):
-        print('111!!!!!!', x.shape)
         x = self.fc(x)  # 128 * 8 * 8
-        print('222!!!!!!', x.shape)
         x = x.view(x.size(0), 2 * self.ngf, 8, 8)
-        print('333!!!!!!', x.shape)
         x = self.conv1(x)
         x_t = self.linear1(c)
 
