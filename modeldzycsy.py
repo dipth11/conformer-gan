@@ -592,8 +592,8 @@ class NetG(nn.Module):
             nn.init.constant_(m.bias, 0.)
 
     def forward(self, x, c):
-        x = self.fc(x)  # 128 * 4 * 4
-        x = x.view(x.size(0), 2 * self.ngf, 4, 4)
+        x = self.fc(x)  # 128 * 8 * 8
+        x = x.view(x.size(0), 2 * self.ngf, 8, 8)
 
         x = self.conv1(x)
         x_t = self.linear1(c)
