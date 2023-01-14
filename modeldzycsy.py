@@ -557,6 +557,7 @@ class NetG(nn.Module):
                             )
                             )
 
+        self.ngf = ngf
         self.fin_stage = fin_stage
 
         self.conv_img = nn.Sequential(
