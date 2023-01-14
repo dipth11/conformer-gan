@@ -313,6 +313,9 @@ class ConvTransBlock(nn.Module):
 
         x_st = self.squeeze_block(x2, x_t)
 
+        print('x_st!!!!!!!!!!!!!!!!!!', x_st)
+        print('x_t!!!!!!!!!!!!!!', x_t)
+
         x_t = self.trans_block(x_st + x_t)
 
         if self.num_med_block > 0:
