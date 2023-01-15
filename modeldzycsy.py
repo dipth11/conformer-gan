@@ -284,11 +284,12 @@ class ConvTransBlock(nn.Module):
         self.cnn_block = ConvBlock(inplanes=inplanes, outplanes=outplanes, res_conv=res_conv, stride=stride,
                                    groups=groups)
 
-        if last_fusion:
-            self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, stride=2, res_conv=True,
-                                          groups=groups)
-        else:
-            self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
+        # if last_fusion:
+        #     self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, stride=2, res_conv=True,
+        #                                   groups=groups)
+        # else:
+        #     self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
+        self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
 
         if num_med_block > 0:
             self.med_block = []
