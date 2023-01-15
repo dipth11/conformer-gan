@@ -178,9 +178,7 @@ class FCUDown(nn.Module):
     def forward(self, x, x_t):
         x = self.conv_project(x)  # [N, C, H, W]
         x = self.sample_pooling(x).flatten(2) # N C HxW
-        print('x!!!!!!!!!!', x.shape)
         x = self.linear_proj(x).transpose(1, 2)
-        print('x2.........',x.shape)
         x = self.ln(x)
         x = self.act(x)
 
@@ -407,6 +405,7 @@ class NetG(nn.Module):
         init_stage = fin_stage  # 9
         fin_stage = 9  # 13
         for i in range(init_stage, fin_stage):
+            stride = 32 if i == fin_stage else 16
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
             out_channel = stage_3_channel if i == init_stage else stage_3_channel // 2
             res_conv = True if i == init_stage else False
@@ -414,7 +413,7 @@ class NetG(nn.Module):
             self.add_module('conv_trans_' + str(i),
                             ConvTransBlock(
                                 in_channel, out_channel, res_conv, 1,
-                                dw_stride=32,
+                                dw_stride=stride,
                                 proj1=self.linear1_proj, proj2=self.linear2_proj,
                                 embed_dim=embed_dim,
                                 num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -472,7 +471,6 @@ class NetG(nn.Module):
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('conv_tarns_', i, '!!!!111111')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
 
         x_t = x_t.permute(0,2,1)
