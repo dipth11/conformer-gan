@@ -282,9 +282,10 @@ class ConvTransBlock(nn.Module):
                  last_fusion=False, num_med_block=0, groups=1):
 
         super(ConvTransBlock, self).__init__()
+        expansion = 4 if not last_fusion else 2
         self.cnn_block = ConvBlock(inplanes=inplanes, outplanes=outplanes, res_conv=res_conv, stride=stride,
                                    groups=groups)
-        expansion = 4
+
         # if last_fusion:
         #     self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, stride=2, res_conv=True,
         #                                   groups=groups)
@@ -298,9 +299,9 @@ class ConvTransBlock(nn.Module):
                 self.med_block.append(Med_ConvBlock(inplanes=outplanes, groups=groups))
             self.med_block = nn.ModuleList(self.med_block)
 
-        self.squeeze_block = FCUDown(inplanes=outplanes, outplanes=embed_dim, dw_stride=dw_stride, proj=proj1)
+        self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride, proj=proj1)
 
-        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes, up_stride=dw_stride, proj=proj2)
+        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride, proj=proj2)
 
         self.trans_block = Block(
             dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
