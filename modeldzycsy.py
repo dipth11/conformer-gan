@@ -282,7 +282,7 @@ class ConvTransBlock(nn.Module):
                  last_fusion=False, num_med_block=0, groups=1):
 
         super(ConvTransBlock, self).__init__()
-        expansion = 4 if not last_fusion else 1
+        expansion = 4
         self.cnn_block = ConvBlock(inplanes=inplanes, outplanes=outplanes, res_conv=res_conv, stride=stride,
                                    groups=groups)
 
