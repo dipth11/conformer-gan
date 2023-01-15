@@ -298,7 +298,7 @@ class ConvTransBlock(nn.Module):
                 self.med_block.append(Med_ConvBlock(inplanes=outplanes, groups=groups))
             self.med_block = nn.ModuleList(self.med_block)
 
-        self.squeeze_block = FCUDown(inplanes=inplanes, outplanes=embed_dim, dw_stride=dw_stride, proj=proj1)
+        self.squeeze_block = FCUDown(inplanes=outplanes, outplanes=embed_dim, dw_stride=dw_stride, proj=proj1)
 
         self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes, up_stride=dw_stride, proj=proj2)
 
