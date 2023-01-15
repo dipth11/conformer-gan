@@ -471,9 +471,9 @@ class NetG(nn.Module):
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('start conv_trans_', i, '......')
+            # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            print('finish conv_trans_', i, '......')
+            # print('finish conv_trans_', i, '......')
 
         x_t = self.mlp(x_t).permute(0,2,1) # 6 256 19
         x_t = self.linear2_proj(x_t).reshape(x_t.shape[0], x_t.shape[1], 8, 8) # 6 256 8 8
