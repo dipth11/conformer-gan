@@ -203,13 +203,10 @@ class FCUUp(nn.Module):
 
     def forward(self, x, up_stride):
         B, _, C = x.shape
-        print('11111111111', x.shape)
         # [N, 197, 384] -> [N, 196, 384] -> [N, 384, 196] -> [N, 384, 14, 14]
         x = x.transpose(1, 2)
         x_r = self.linear_proj(x).reshape(B, C, 8, 8)
-        print('22222222222', x_r.shape)
         x_r = self.act(self.bn(self.conv_project(x_r)))
-        print('33333333333', x_r.shape)
         return F.interpolate(x_r, size=(8 * up_stride, 8 * up_stride))
 
 
@@ -327,8 +324,6 @@ class ConvTransBlock(nn.Module):
                 x = m(x)
 
         x_t_r = self.expand_block(x_t, self.dw_stride)
-        print(x.shape,'!!!!!!!!!!!!')
-        print(x_t_r.shape,'@@@@@@@@@@@')
         x = self.fusion_block(x, x_t_r, return_x_2=False)
 
         return x, x_t
@@ -410,7 +405,7 @@ class NetG(nn.Module):
         init_stage = fin_stage  # 9
         fin_stage = 9  # 13
         for i in range(init_stage, fin_stage):
-            stride = 32 if i == fin_stage else 16
+            stride = 32 if i == fin_stage-1 else 16
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
             out_channel = stage_3_channel if i == init_stage else stage_3_channel // 2
             res_conv = True if i == init_stage else False
