@@ -178,6 +178,7 @@ class FCUDown(nn.Module):
     def forward(self, x, x_t):
         x = self.conv_project(x)  # [N, C, H, W]
         x = self.sample_pooling(x).flatten(2) # N C HxW
+        print('x!!!!!!!!!!', x.shape)
         x = self.linear_proj(x).transpose(1, 2)
         x = self.ln(x)
         x = self.act(x)
