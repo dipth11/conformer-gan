@@ -476,7 +476,7 @@ class NetG(nn.Module):
             print('finish conv_trans_', i, '......')
 
         x_t = self.mlp(x_t).permute(0,2,1) # 6 256 19
-        x_t = self.linear2_proj(x_t) # 6 256 64
+        x_t = self.linear2_proj(x_t).reshape(x_t.shape[0], x_t.shape[1], 8, 8) # 6 256 8 8
         # x:(bz,256,256,256) (B,C,H,W)
         # x_t: (bz,256,19)
         out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
