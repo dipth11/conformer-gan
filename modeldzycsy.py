@@ -471,7 +471,9 @@ class NetG(nn.Module):
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
+            print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
+            print('finish conv_trans_', i, '......')
 
         x_t = x_t.permute(0,2,1)
         # x:(bz,256,256,256) (B,C,H,W)
