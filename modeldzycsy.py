@@ -327,6 +327,8 @@ class ConvTransBlock(nn.Module):
                 x = m(x)
 
         x_t_r = self.expand_block(x_t, self.dw_stride)
+        print(x.shape,'!!!!!!!!!!!!')
+        print(x_t_r.shape,'@@@@@@@@@@@')
         x = self.fusion_block(x, x_t_r, return_x_2=False)
 
         return x, x_t
