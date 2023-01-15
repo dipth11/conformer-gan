@@ -335,7 +335,7 @@ class NetG(nn.Module):
         super(NetG, self).__init__()
 
         # self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-        assert depth % 3 == 0
+        # assert depth % 3 == 0
 
         # self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.trans_dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
