@@ -412,7 +412,7 @@ class NetG(nn.Module):
             last_fusion = True if i == depth else False
             self.add_module('conv_trans_' + str(i),
                             ConvTransBlock(
-                                in_channel, out_channel, res_conv, 1,
+                                in_channel, stage_3_channel, res_conv, 1,
                                 dw_stride=stride,
                                 proj1=self.linear1_proj, proj2=self.linear2_proj,
                                 embed_dim=embed_dim,
@@ -427,9 +427,9 @@ class NetG(nn.Module):
         self.fin_stage = fin_stage
 
         self.conv_img = nn.Sequential(
-            BatchNorm(128),
+            BatchNorm(256),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(128, 64, 3, 1, 1),
+            nn.Conv2d(256, 64, 3, 1, 1),
             BatchNorm(64),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(64, 3, 3, 1, 1),
@@ -471,9 +471,9 @@ class NetG(nn.Module):
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('start conv_trans_', i, '......')
+            # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            print('finish conv_trans_', i, '......')
+            # print('finish conv_trans_', i, '......')
 
         x_t = x_t.permute(0,2,1)
         # x:(bz,256,256,256) (B,C,H,W)
