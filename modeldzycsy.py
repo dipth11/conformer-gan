@@ -203,11 +203,13 @@ class FCUUp(nn.Module):
 
     def forward(self, x, up_stride):
         B, _, C = x.shape
+        print('11111111111', x.shape)
         # [N, 197, 384] -> [N, 196, 384] -> [N, 384, 196] -> [N, 384, 14, 14]
         x = x.transpose(1, 2)
         x_r = self.linear_proj(x).reshape(B, C, 8, 8)
+        print('22222222222', x_r.shape)
         x_r = self.act(self.bn(self.conv_project(x_r)))
-
+        print('33333333333', x_r.shape)
         return F.interpolate(x_r, size=(8 * up_stride, 8 * up_stride))
 
 
@@ -472,9 +474,9 @@ class NetG(nn.Module):
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('start conv_trans_', i, '......')
+            # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            print('finish conv_trans_', i, '......')
+            # print('finish conv_trans_', i, '......')
 
         x_t = x_t.permute(0,2,1)
         # x:(bz,256,256,256) (B,C,H,W)
