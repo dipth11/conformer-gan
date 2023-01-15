@@ -436,7 +436,7 @@ class NetG(nn.Module):
             nn.Tanh(),
         )
 
-        self.mlp = nn.Linear(19,1)
+        self.mlp = nn.Linear(512,256)
 
         self.apply(self._init_weights)
 
@@ -475,10 +475,11 @@ class NetG(nn.Module):
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             print('finish conv_trans_', i, '......')
 
-        x_t = x_t.permute(0,2,1)
+        x_t = self.mlp(x_t).permute(0,2,1) # 6 256 19
+        x_t = self.linear2_proj(x_t) # 6 256 64
         # x:(bz,256,256,256) (B,C,H,W)
         # x_t: (bz,256,19)
-        out = x + self.mlp(x_t)
+        out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
 
         out = self.conv_img(out)
 
