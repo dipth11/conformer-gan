@@ -180,6 +180,7 @@ class FCUDown(nn.Module):
         x = self.sample_pooling(x).flatten(2) # N C HxW
         print('x!!!!!!!!!!', x.shape)
         x = self.linear_proj(x).transpose(1, 2)
+        print('x2.........',x.shape)
         x = self.ln(x)
         x = self.act(x)
 
