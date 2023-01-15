@@ -454,10 +454,10 @@ if __name__ == "__main__":
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
-    # if args.gpu_id == -1:
-    #     cfg.CUDA = False
-    # else:
-    #     cfg.GPU_ID = args.gpu_id
+    if args.gpu_id == -1:
+        cfg.CUDA = False
+    else:
+        cfg.GPU_ID = args.gpu_id
 
     if args.data_dir != '':
         cfg.DATA_DIR = args.data_dir
