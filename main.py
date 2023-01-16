@@ -382,8 +382,6 @@ def train(dataloader, ixtoword, netG, netD, text_encoder, image_encoder,
 
             imgs = imags[0].to(device)
             real_features = netD(imgs)
-            if sent_emb is None:
-                print('sent_emb is None !!!!!!!!!!!!!')
             output = netD.module.COND_DNET(real_features, sent_emb)
             errD_real = torch.nn.ReLU()(1.0 - output).mean()
 
@@ -394,6 +392,8 @@ def train(dataloader, ixtoword, netG, netD, text_encoder, image_encoder,
             noise = torch.randn(batch_size, 100)
             noise = noise.to(device)
             # c: 24 x 19 x 256
+            if words_embs.shape[-1] != 18:
+                print('words_embs:', words_embs.shape, '!!!!!!!!!!!!!')
             c = torch.cat((words_embs.permute(0,2,1), sent_emb.unsqueeze(dim=1)), dim=1)
             fake, _ = netG(noise, c)
 
