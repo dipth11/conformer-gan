@@ -343,8 +343,8 @@ class NetG(nn.Module):
         self.fc = nn.Linear(nz, 128 * 8 * 8)
 
         # Stem stage: get the feature maps by conv block (copied form resnet.py)
-        self.conv1 = nn.Conv2d(128, 128, kernel_size=1, stride=1, padding=0, bias=False)  # 1 / 2 [112, 112]
-        self.bn1 = nn.BatchNorm2d(128)
+        self.conv1 = nn.Conv2d(128, 256, kernel_size=1, stride=1, padding=0, bias=False)  # 1 / 2 [112, 112]
+        self.bn1 = nn.BatchNorm2d(256)
         self.act1 = nn.ReLU(inplace=True)
 
         self.linear1 = nn.Linear(256, embed_dim)
@@ -353,14 +353,14 @@ class NetG(nn.Module):
         # 1 stage
         stage_1_channel = 256
         trans_dw_stride = patch_size // 4
-        self.conv_1 = ConvBlock(inplanes=128, outplanes=stage_1_channel, res_conv=True, stride=1)
+        self.conv_1 = ConvBlock(inplanes=256, outplanes=stage_1_channel, res_conv=True, stride=1)
         # self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
         self.trans_1 = Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                              qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=self.trans_dpr[0],
                              )
 
-        self.linear1_proj = nn.Linear(64, 19)
-        self.linear2_proj = nn.Linear(19, 64)
+        self.linear1_proj = nn.Linear(64, 65)
+        self.linear2_proj = nn.Linear(65, 64)
 
         # 2~3 stage 32x32
         init_stage = 2
@@ -459,9 +459,9 @@ class NetG(nn.Module):
 
     def forward(self, x, c):
         x = self.fc(x)  # 128 * 8 * 8
-        x = x.view(x.size(0), 2 * self.ngf, 8, 8)
+        x = x.view(x.size(0), 2 * self.ngf, 8, 8) # x (bz,128,8,8)
         x = self.conv1(x)
-        print('1111', c.shape)
+        c = torch.cat((c, x.view(x.size(0), x.size(1), -1).pemute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
         x_t = self.linear1(c)
         print('2222', x_t.shape)
         # interpolate in 1,2,4,6,8 stage

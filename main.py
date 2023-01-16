@@ -392,10 +392,8 @@ def train(dataloader, ixtoword, netG, netD, text_encoder, image_encoder,
             noise = torch.randn(batch_size, 100)
             noise = noise.to(device)
             # c: 24 x 19 x 256
-            if words_embs.shape[-1] != 18:
-                print('words_embs:', words_embs.shape, '!!!!!!!!!!!!!')
-            c = torch.cat((words_embs.permute(0,2,1), sent_emb.unsqueeze(dim=1)), dim=1)
-            fake, _ = netG(noise, c)
+            # c = torch.cat((words_embs.permute(0,2,1), sent_emb.unsqueeze(dim=1)), dim=1)
+            fake, _ = netG(noise, sent_emb)
 
             # G does not need update with D
             fake_features = netD(fake.detach())
