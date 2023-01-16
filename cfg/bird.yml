@@ -17,7 +17,7 @@ TREE:
 
 TRAIN:
     NF: 64 # default 64
-    BATCH_SIZE: 24 #24
+    BATCH_SIZE: 12 #24
     MAX_EPOCH: 600
     NET_G: '' # when validation, put the path of the trained model here
     WARMUP_EPOCHS: 100
