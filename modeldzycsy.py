@@ -315,10 +315,10 @@ class ConvTransBlock(nn.Module):
         _, _, H, W = x2.shape
 
         x_st = self.squeeze_block(x2, x_t)
-        print('4444', x_t.shape)
+        # print('4444', x_t.shape)
         # x_st: 6 19 512 ; x_t: 6 19 512
         x_t = self.trans_block(x_st + x_t)
-        print('5555', x_t.shape)
+        # print('5555', x_t.shape)
         if self.num_med_block > 0:
             for m in self.med_block:
                 x = m(x)
@@ -461,21 +461,21 @@ class NetG(nn.Module):
         x = self.fc(x)  # 128 * 8 * 8
         x = x.view(x.size(0), 2 * self.ngf, 8, 8) # x (bz,128,8,8)
         x = self.conv1(x)
-        c = torch.cat((c, x.view(x.size(0), x.size(1), -1).pemute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
+        c = torch.cat((c, x.view(x.size(0), x.size(1), -1).permute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
         x_t = self.linear1(c)
-        print('2222', x_t.shape)
+        # print('2222', x_t.shape)
         # interpolate in 1,2,4,6,8 stage
         x = F.interpolate(x, scale_factor=2)
         x = self.conv_1(x, return_x_2=False)
         x_t = self.trans_1(x_t)
-        print('3333', x_t.shape)
+        # print('3333', x_t.shape)
         # 2 ~ final
         for i in range(2, self.fin_stage):
             if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('start conv_trans_', i, '......')
+            # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            print('finish conv_trans_', i, '......')
+            # print('finish conv_trans_', i, '......')
 
         x_t = self.mlp(x_t).permute(0,2,1) # 6 256 19
         x_t = self.linear2_proj(x_t).reshape(x_t.shape[0], x_t.shape[1], 8, 8) # 6 256 8 8
