@@ -382,6 +382,8 @@ def train(dataloader, ixtoword, netG, netD, text_encoder, image_encoder,
 
             imgs = imags[0].to(device)
             real_features = netD(imgs)
+            if sent_emb is None:
+                print('sent_emb is None !!!!!!!!!!!!!')
             output = netD.module.COND_DNET(real_features, sent_emb)
             errD_real = torch.nn.ReLU()(1.0 - output).mean()
 
