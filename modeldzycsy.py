@@ -461,7 +461,7 @@ class NetG(nn.Module):
         x = self.fc(x)  # 128 * 8 * 8
         x = x.view(x.size(0), 2 * self.ngf, 8, 8) # x (bz,128,8,8)
         x = self.conv1(x)
-        c = torch.cat((c, x.view(x.size(0), x.size(1), -1).permute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
+        c = torch.cat((c.unsqueeze(dim=1), x.view(x.size(0), x.size(1), -1).permute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
         x_t = self.linear1(c)
         # print('2222', x_t.shape)
         # interpolate in 1,2,4,6,8 stage
