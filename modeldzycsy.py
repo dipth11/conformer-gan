@@ -179,7 +179,7 @@ class FCUDown(nn.Module):
         x = self.sample_pooling(x).flatten(2).transpose(1, 2) # N 8x8 C
         x = self.ln(x)
         x = self.act(x)
-
+        x = torch.cat([x_t[:, 0][:, None, :], x], dim=1)
         # x = torch.cat([x_t[:, 0][:, None, :], x], dim=1)
 
         return x
@@ -314,8 +314,8 @@ class ConvTransBlock(nn.Module):
         x_st = self.squeeze_block(x2, x_t)
         # print('4444', x_t.shape)
         # x_st: 6 64 512 ; x_t: 6 65 512
-        x_t = torch.cat((x_t[..., 0], x_st + x_t[..., 1:]), dim=-1)
-        x_t = self.trans_block(x_t)
+
+        x_t = self.trans_block(x_st + x_t)
         # print('5555', x_t.shape)
         if self.num_med_block > 0:
             for m in self.med_block:
