@@ -163,14 +163,13 @@ class FCUDown(nn.Module):
     """ CNN feature maps -> Transformer patch embeddings
     """
 
-    def __init__(self, inplanes, outplanes, dw_stride, proj, act_layer=nn.GELU,
+    def __init__(self, inplanes, outplanes, dw_stride, act_layer=nn.GELU,
                  norm_layer=partial(nn.LayerNorm, eps=1e-6)):
         super(FCUDown, self).__init__()
         self.dw_stride = dw_stride
 
         self.conv_project = nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0)
         self.sample_pooling = nn.AvgPool2d(kernel_size=dw_stride, stride=dw_stride)
-        self.linear_proj = proj
 
         self.ln = norm_layer(outplanes)
         self.act = act_layer()
@@ -178,7 +177,6 @@ class FCUDown(nn.Module):
     def forward(self, x, x_t):
         x = self.conv_project(x)  # [N, C, H, W]
         x = self.sample_pooling(x).flatten(2) # N C 8x8
-        x = self.linear_proj(x).transpose(1, 2)
         x = self.ln(x)
         x = self.act(x)
 
@@ -191,13 +189,12 @@ class FCUUp(nn.Module):
     """ Transformer patch embeddings -> CNN feature maps
     """
 
-    def __init__(self, inplanes, outplanes, up_stride, proj, act_layer=nn.ReLU,
+    def __init__(self, inplanes, outplanes, up_stride, act_layer=nn.ReLU,
                  norm_layer=partial(nn.BatchNorm2d, eps=1e-6), ):
         super(FCUUp, self).__init__()
 
         self.up_stride = up_stride
         self.conv_project = nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0)
-        self.linear_proj = proj
         self.bn = norm_layer(outplanes)
         self.act = act_layer()
 
@@ -205,7 +202,7 @@ class FCUUp(nn.Module):
         B, _, C = x.shape
         # [N, 197, 384] -> [N, 196, 384] -> [N, 384, 196] -> [N, 384, 14, 14]
         x = x.transpose(1, 2)
-        x_r = self.linear_proj(x).reshape(B, C, 8, 8)
+        x_r = x[..., 1:].reshape(B, C, 8, 8)
         x_r = self.act(self.bn(self.conv_project(x_r)))
         return F.interpolate(x_r, size=(8 * up_stride, 8 * up_stride))
 
@@ -274,7 +271,7 @@ class ConvTransBlock(nn.Module):
     Basic module for ConvTransformer, keep feature maps for CNN block and patch embeddings for transformer encoder block
     """
 
-    def __init__(self, inplanes, outplanes, res_conv, stride, dw_stride, proj1, proj2, embed_dim, num_heads=12, mlp_ratio=4.,
+    def __init__(self, inplanes, outplanes, res_conv, stride, dw_stride, embed_dim, num_heads=12, mlp_ratio=4.,
                  qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.,
                  last_fusion=False, num_med_block=0, groups=1):
 
@@ -296,9 +293,9 @@ class ConvTransBlock(nn.Module):
                 self.med_block.append(Med_ConvBlock(inplanes=outplanes, groups=groups))
             self.med_block = nn.ModuleList(self.med_block)
 
-        self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride, proj=proj1)
+        self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride)
 
-        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride, proj=proj2)
+        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride)
 
         self.trans_block = Block(
             dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -316,8 +313,9 @@ class ConvTransBlock(nn.Module):
 
         x_st = self.squeeze_block(x2, x_t)
         # print('4444', x_t.shape)
-        # x_st: 6 19 512 ; x_t: 6 19 512
-        x_t = self.trans_block(x_st + x_t)
+        # x_st: 6 64 512 ; x_t: 6 65 512
+        x_t = torch.cat((x_t[..., 0], x_st + x_t[..., 1:]), dim=-1)
+        x_t = self.trans_block(x_t)
         # print('5555', x_t.shape)
         if self.num_med_block > 0:
             for m in self.med_block:
@@ -359,8 +357,6 @@ class NetG(nn.Module):
                              qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=self.trans_dpr[0],
                              )
 
-        self.linear1_proj = nn.Linear(64, 65)
-        self.linear2_proj = nn.Linear(65, 64)
 
         # 2~3 stage 32x32
         init_stage = 2
@@ -370,7 +366,6 @@ class NetG(nn.Module):
                             ConvTransBlock(
                                 stage_1_channel, stage_1_channel, False, 1,
                                 dw_stride=4,
-                                proj1=self.linear1_proj, proj2=self.linear2_proj,
                                 embed_dim=embed_dim,
                                 num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                                 drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
@@ -391,7 +386,6 @@ class NetG(nn.Module):
                             ConvTransBlock(
                                 in_channel, stage_2_channel, res_conv, 1,
                                 dw_stride=stride,
-                                proj1=self.linear1_proj, proj2=self.linear2_proj,
                                 embed_dim=embed_dim,
                                 num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                                 drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
@@ -414,7 +408,6 @@ class NetG(nn.Module):
                             ConvTransBlock(
                                 in_channel, stage_3_channel, res_conv, 1,
                                 dw_stride=stride,
-                                proj1=self.linear1_proj, proj2=self.linear2_proj,
                                 embed_dim=embed_dim,
                                 num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                                 drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
@@ -461,7 +454,7 @@ class NetG(nn.Module):
         x = self.fc(x)  # 128 * 8 * 8
         x = x.view(x.size(0), 2 * self.ngf, 8, 8) # x (bz,128,8,8)
         x = self.conv1(x)
-        c = torch.cat((c.unsqueeze(dim=1), x.view(x.size(0), x.size(1), -1).permute(0,2,1)), dim=1) #x (bz,64,256) c(bz,1,256)
+        c = torch.cat((c.unsqueeze(dim=1), x.view(x.size(0), x.size(1), -1).permute(0,2,1)), dim=1) #c(bz,1,256) + x(bz,64,256) = c(bz,65,256)
         x_t = self.linear1(c)
         # print('2222', x_t.shape)
         # interpolate in 1,2,4,6,8 stage
@@ -477,10 +470,7 @@ class NetG(nn.Module):
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             # print('finish conv_trans_', i, '......')
 
-        x_t = self.mlp(x_t).permute(0,2,1) # 6 256 19
-        x_t = self.linear2_proj(x_t).reshape(x_t.shape[0], x_t.shape[1], 8, 8) # 6 256 8 8
-        # x:(bz,256,256,256) (B,C,H,W)
-        # x_t: (bz,256,19)
+        x_t = self.mlp(x_t).permute(0,2,1)[1:]
         out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
 
         out = self.conv_img(out)
