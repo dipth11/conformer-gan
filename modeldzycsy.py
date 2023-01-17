@@ -470,7 +470,7 @@ class NetG(nn.Module):
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             # print('finish conv_trans_', i, '......')
 
-        x_t = self.mlp(x_t).permute(0,2,1)[1:]
+        x_t = self.mlp(x_t).permute(0,2,1)[..., 1:]  # bz 256 64
         out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
 
         out = self.conv_img(out)
