@@ -129,8 +129,8 @@ def sampling(text_encoder, netG, dataloader, ixtoword, device):
             with torch.no_grad():
                 noise = torch.randn(batch_size, 100)
                 noise = noise.to(device)
-                fake_imgs, stage_masks = netG(noise, sent_emb)
-                stage_mask = stage_masks[-1]
+                fake_imgs, _ = netG(noise, sent_emb)
+                # stage_mask = stage_masks[-1]
             for j in range(batch_size):
                 # save generated image
                 s_tmp = '%s/img' % (fake_img_save_dir)
@@ -150,17 +150,17 @@ def sampling(text_encoder, netG, dataloader, ixtoword, device):
                 im.save(fullpath)
 
                 # save the last fusion mask
-                s_tmp = '%s/fm' % fake_img_save_dir
-                im = stage_mask[j].data.cpu().numpy()
-                # [0, 1] --> [0, 255]
-                # im = 1-im # only for better visualization
-                im = im * 255.0
-                im = im.astype(np.uint8)
-                im = np.transpose(im, (1, 2, 0))
-                im = np.squeeze(im, axis=2)
-                im = Image.fromarray(im)
-                fullpath = '%s_%d.png' % (s_tmp, idx)
-                im.save(fullpath)
+                # s_tmp = '%s/fm' % fake_img_save_dir
+                # im = stage_mask[j].data.cpu().numpy()
+                # # [0, 1] --> [0, 255]
+                # # im = 1-im # only for better visualization
+                # im = im * 255.0
+                # im = im.astype(np.uint8)
+                # im = np.transpose(im, (1, 2, 0))
+                # im = np.squeeze(im, axis=2)
+                # im = Image.fromarray(im)
+                # fullpath = '%s_%d.png' % (s_tmp, idx)
+                # im.save(fullpath)
 
                 idx += 1
 
