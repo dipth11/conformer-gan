@@ -450,7 +450,7 @@ def train(dataloader, ixtoword, netG, netD, text_encoder, image_encoder,
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = '2,3'
+    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
     args = parse_args()
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
