@@ -470,7 +470,8 @@ class NetG(nn.Module):
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             # print('finish conv_trans_', i, '......')
         print('11111', x_t.shape)
-        x_t = self.mlp(x_t).permute(0,2,1)[..., 1:].reshape(x_t.shape[0], x_t.shape[1], 8, 8)  # bz 256 64
+        x_t = self.mlp(x_t).permute(0,2,1)[..., 1:]  # bz 256 64
+        x_t = x_t.reshape(x_t.shape[0], x_t.shape[1], 8, 8)
         print('22222', x_t.shape)
         out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
 
