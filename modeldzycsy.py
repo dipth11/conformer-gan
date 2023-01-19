@@ -317,6 +317,8 @@ class ConvTransBlock(nn.Module):
 
         x_st = self.squeeze_block(x2, x_t)
         # print('4444', x_t.shape)
+        # x_st: 6 64 512 ; x_t: 6 65 512
+
         x_t = self.trans_block(x_st + x_t)
         # print('5555', x_t.shape)
         if self.num_med_block > 0:
@@ -381,7 +383,7 @@ class NetG(nn.Module):
         stage_2_channel = 512
         # 4~6 stage; 4,5 64x64; 6 128x128
         init_stage = fin_stage  # 5
-        fin_stage = 6  # 9
+        fin_stage = 7  # 9
         for i in range(init_stage, fin_stage):
             stride = 16 if i == fin_stage-1 else 8
             in_channel = stage_1_channel if i == init_stage else stage_2_channel
@@ -401,7 +403,7 @@ class NetG(nn.Module):
         stage_3_channel = 256
         # 7~8 stage
         init_stage = fin_stage  # 9
-        fin_stage = 7  # 13
+        fin_stage = 9  # 13
         for i in range(init_stage, fin_stage):
             stride = 32 if i == fin_stage-1 else 16
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
@@ -473,13 +475,12 @@ class NetG(nn.Module):
         x_t = self.trans_1(x_t)
         # print('3333', x_t.shape)
         # 2 ~ final
-        intepolate_stage = (2, 4, 5, 6)
         for i in range(2, self.fin_stage):
-            if i in intepolate_stage:
+            if i % 2 == 0:
                x = F.interpolate(x, scale_factor=2)
-            print('start conv_trans_', i, '......')
+            # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            print('finish conv_trans_', i, '......')
+            # print('finish conv_trans_', i, '......')
         x_t = self.mlp(x_t) # bz 65 256
         c = x_t[:, 0, :]
         x_t = x_t.permute(0,2,1)[..., 1:]  # bz 256 64
