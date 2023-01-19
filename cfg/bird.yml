@@ -17,7 +17,7 @@ TREE:
 
 TRAIN:
     NF: 64 # default 64
-    BATCH_SIZE: 6 #24
+    BATCH_SIZE: 3 #24
     MAX_EPOCH: 600
     NET_G: '/home/lab265/lab265/dzy/Code/T2I/conformer-gan/model/birds/netG_120.pth' # when validation, put the path of the trained model here
     WARMUP_EPOCHS: 100
