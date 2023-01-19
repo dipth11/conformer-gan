@@ -299,7 +299,7 @@ class ConvTransBlock(nn.Module):
         self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride)
 
         self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride)
-        self.affine = affine(outplanes)
+        self.affine = affine(outplanes // expansion)
 
         self.trans_block = Block(
             dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
