@@ -317,8 +317,6 @@ class ConvTransBlock(nn.Module):
 
         x_st = self.squeeze_block(x2, x_t)
         # print('4444', x_t.shape)
-        # x_st: 6 64 512 ; x_t: 6 65 512
-
         x_t = self.trans_block(x_st + x_t)
         # print('5555', x_t.shape)
         if self.num_med_block > 0:
@@ -476,7 +474,7 @@ class NetG(nn.Module):
         # print('3333', x_t.shape)
         # 2 ~ final
         for i in range(2, self.fin_stage):
-            if i % 2 == 0:
+            if i % 2 == 0 or i == 7: # 2 4 6 8
                x = F.interpolate(x, scale_factor=2)
             # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
