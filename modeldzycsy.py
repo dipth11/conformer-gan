@@ -197,7 +197,7 @@ class FCUUp(nn.Module):
         self.conv_project = nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0)
         self.bn = norm_layer(outplanes)
         self.act = act_layer()
-        self.conv1 = nn.Conv2d(outplanes, outplanes, kernel_size=1, stride=1, padding=0)
+        # self.conv1 = nn.Conv2d(outplanes, outplanes, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x, up_stride):
         B, _, C = x.shape
