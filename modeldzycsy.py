@@ -474,11 +474,11 @@ class NetG(nn.Module):
         # print('3333', x_t.shape)
         # 2 ~ final
         for i in range(2, self.fin_stage):
-            if i % 2 == 0 or i == 7: # 2 4 6 8
+            if i % 2 == 0 or i == 7: # 2 4 6 7
                x = F.interpolate(x, scale_factor=2)
-            # print('start conv_trans_', i, '......')
+            print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            # print('finish conv_trans_', i, '......')
+            print('finish conv_trans_', i, '......')
         x_t = self.mlp(x_t) # bz 65 256
         c = x_t[:, 0, :]
         x_t = x_t.permute(0,2,1)[..., 1:]  # bz 256 64
