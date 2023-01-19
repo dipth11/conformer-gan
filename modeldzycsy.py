@@ -202,12 +202,9 @@ class FCUUp(nn.Module):
     def forward(self, x, up_stride):
         B, _, C = x.shape
         # [N, 197, 384] -> [N, 196, 384] -> [N, 384, 196] -> [N, 384, 14, 14]
-        x = x.transpose(1, 2)
-        x_r = x[..., 1:].reshape(B, C, 8, 8)
-        x_r = F.interpolate(x_r, size=(8 * up_stride, 8 * up_stride))
+        x_r = x[:, 1:].transpose(1, 2).reshape(B, C, 8, 8)
         x_r = self.act(self.bn(self.conv_project(x_r)))
-        x_r = torch.sigmoid(self.conv1(x_r))    # mask
-        return x_r
+        return F.interpolate(x_r, size=(8 * self.up_stride, 8 * self.up_stride))
 
 
 class Med_ConvBlock(nn.Module):
@@ -288,7 +285,7 @@ class ConvTransBlock(nn.Module):
         #                                   groups=groups)
         # else:
         #     self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
-        # self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
+        self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
 
         if num_med_block > 0:
             self.med_block = []
@@ -298,8 +295,8 @@ class ConvTransBlock(nn.Module):
 
         self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride)
 
-        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes, up_stride=dw_stride)
-        self.affine = affine(outplanes)
+        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride)
+        # self.affine = affine(outplanes)
 
         self.trans_block = Block(
             dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -326,12 +323,9 @@ class ConvTransBlock(nn.Module):
                 x = m(x)
 
         x_t_r = self.expand_block(x_t, self.dw_stride)
-        print('!!!!!x:', x.shape)
-        print('!!!!!x_t:',x_t.shape)
-        print('!!!!!x_t_r:',x_t_r.shape)
-        x = x + self.affine(x, x_t[:, 0, :], x_t_r)
 
-        # x = self.fusion_block(x, x_t_r, return_x_2=False)
+
+        x = self.fusion_block(x, x_t_r, return_x_2=False)
 
         return x, x_t
 
@@ -428,12 +422,6 @@ class NetG(nn.Module):
         self.ngf = ngf
         self.fin_stage = fin_stage
 
-        self.conv_mask = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1),
-                                       BatchNorm(256),
-                                       nn.ReLU(),
-                                       nn.Conv2d(256, 1, 1, 1, 0))
-        self.affine0 = affine(256)
-
         self.conv_img = nn.Sequential(
             BatchNorm(256),
             nn.LeakyReLU(0.2, inplace=True),
@@ -484,12 +472,9 @@ class NetG(nn.Module):
             # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             # print('finish conv_trans_', i, '......')
-        x_t = self.mlp(x_t) # bz 65 256
-        x_t = x_t.permute(0,2,1)[..., 1:]  # bz 256 64
+        x_t = self.mlp(x_t).permute(0,2,1)[..., 1:]  # bz 256 64
         x_t = x_t.reshape(x_t.shape[0], x_t.shape[1], 8, 8)
-        x_t = F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
-        fusion_mask = self.conv_mask(x_t)
-        out = x + self.affine0(x, x_t[:, 0, :], fusion_mask)
+        out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
 
         out = self.conv_img(out)
 
