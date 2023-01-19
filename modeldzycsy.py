@@ -326,9 +326,6 @@ class ConvTransBlock(nn.Module):
                 x = m(x)
 
         x_t_r = self.expand_block(x_t, self.dw_stride) # bz c h w
-        print('!!!!!x:', x.shape)
-        print('!!!!!x_t:',x_t.shape)
-        print('!!!!!x_t_r:',x_t_r.shape)
         x = x + self.affine(x, x_t[:, 0, :], x_t_r)
 
         # x = self.fusion_block(x, x_t_r, return_x_2=False)
@@ -386,7 +383,7 @@ class NetG(nn.Module):
         stage_2_channel = 512
         # 4~6 stage; 4,5 64x64; 6 128x128
         init_stage = fin_stage  # 5
-        fin_stage = 7  # 9
+        fin_stage = 6  # 9
         for i in range(init_stage, fin_stage):
             stride = 16 if i == fin_stage-1 else 8
             in_channel = stage_1_channel if i == init_stage else stage_2_channel
@@ -406,7 +403,7 @@ class NetG(nn.Module):
         stage_3_channel = 256
         # 7~8 stage
         init_stage = fin_stage  # 9
-        fin_stage = 9  # 13
+        fin_stage = 8  # 13
         for i in range(init_stage, fin_stage):
             stride = 32 if i == fin_stage-1 else 16
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
