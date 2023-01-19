@@ -401,7 +401,7 @@ class NetG(nn.Module):
         stage_3_channel = 256
         # 7~8 stage
         init_stage = fin_stage  # 9
-        fin_stage = 8  # 13
+        fin_stage = 7  # 13
         for i in range(init_stage, fin_stage):
             stride = 32 if i == fin_stage-1 else 16
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
@@ -473,7 +473,7 @@ class NetG(nn.Module):
         x_t = self.trans_1(x_t)
         # print('3333', x_t.shape)
         # 2 ~ final
-        intepolate_stage = (2, 4, 5, 7)
+        intepolate_stage = (2, 4, 5, 6)
         for i in range(2, self.fin_stage):
             if i in intepolate_stage:
                x = F.interpolate(x, scale_factor=2)
