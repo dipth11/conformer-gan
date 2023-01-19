@@ -197,14 +197,17 @@ class FCUUp(nn.Module):
         self.conv_project = nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0)
         self.bn = norm_layer(outplanes)
         self.act = act_layer()
-        # self.conv1 = nn.Conv2d(outplanes, outplanes, kernel_size=1, stride=1, padding=0)
+        self.conv1 = nn.Conv2d(outplanes, outplanes, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x, up_stride):
         B, _, C = x.shape
         # [N, 197, 384] -> [N, 196, 384] -> [N, 384, 196] -> [N, 384, 14, 14]
-        x_r = x[:, 1:].transpose(1, 2).reshape(B, C, 8, 8)
+        x = x.transpose(1, 2)
+        x_r = x[..., 1:].reshape(B, C, 8, 8)
+        x_r = F.interpolate(x_r, size=(8 * up_stride, 8 * up_stride))
         x_r = self.act(self.bn(self.conv_project(x_r)))
-        return F.interpolate(x_r, size=(8 * self.up_stride, 8 * self.up_stride))
+        x_r = torch.sigmoid(self.conv1(x_r))    # mask
+        return x_r
 
 
 class Med_ConvBlock(nn.Module):
@@ -285,7 +288,7 @@ class ConvTransBlock(nn.Module):
         #                                   groups=groups)
         # else:
         #     self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
-        self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
+        # self.fusion_block = ConvBlock(inplanes=outplanes, outplanes=outplanes, groups=groups)
 
         if num_med_block > 0:
             self.med_block = []
@@ -295,8 +298,8 @@ class ConvTransBlock(nn.Module):
 
         self.squeeze_block = FCUDown(inplanes=outplanes // expansion, outplanes=embed_dim, dw_stride=dw_stride)
 
-        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes // expansion, up_stride=dw_stride)
-        # self.affine = affine(outplanes)
+        self.expand_block = FCUUp(inplanes=embed_dim, outplanes=outplanes, up_stride=dw_stride)
+        self.affine = affine(outplanes)
 
         self.trans_block = Block(
             dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -322,10 +325,13 @@ class ConvTransBlock(nn.Module):
             for m in self.med_block:
                 x = m(x)
 
-        x_t_r = self.expand_block(x_t, self.dw_stride)
+        x_t_r = self.expand_block(x_t, self.dw_stride) # bz c h w
+        print('!!!!!x:', x.shape)
+        print('!!!!!x_t:',x_t.shape)
+        print('!!!!!x_t_r:',x_t_r.shape)
+        x = x + self.affine(x, x_t[:, 0, :], x_t_r)
 
-
-        x = self.fusion_block(x, x_t_r, return_x_2=False)
+        # x = self.fusion_block(x, x_t_r, return_x_2=False)
 
         return x, x_t
 
@@ -422,6 +428,12 @@ class NetG(nn.Module):
         self.ngf = ngf
         self.fin_stage = fin_stage
 
+        self.conv_mask = nn.Sequential(nn.Conv2d(256, 256, 3, 1, 1),
+                                       BatchNorm(256),
+                                       nn.ReLU(),
+                                       nn.Conv2d(256, 1, 1, 1, 0))
+        self.affine0 = affine(256, 256)
+
         self.conv_img = nn.Sequential(
             BatchNorm(256),
             nn.LeakyReLU(0.2, inplace=True),
@@ -472,9 +484,13 @@ class NetG(nn.Module):
             # print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             # print('finish conv_trans_', i, '......')
-        x_t = self.mlp(x_t).permute(0,2,1)[..., 1:]  # bz 256 64
+        x_t = self.mlp(x_t) # bz 65 256
+        c = x_t[:, 0, :]
+        x_t = x_t.permute(0,2,1)[..., 1:]  # bz 256 64
         x_t = x_t.reshape(x_t.shape[0], x_t.shape[1], 8, 8)
-        out = x + F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
+        x_t = F.interpolate(x_t, size=(x.shape[-2], x.shape[-1]))
+        fusion_mask = self.conv_mask(x_t)
+        out = x + self.affine0(x, c, fusion_mask)
 
         out = self.conv_img(out)
 
@@ -486,20 +502,20 @@ class NetG(nn.Module):
 
 class affine(nn.Module):
 
-    def __init__(self, num_features):
+    def __init__(self, num_features, inplanes=512):
         super(affine, self).__init__()
 
         self.batch_norm2d = BatchNorm(num_features, affine=False)
 
         self.fc_gamma = nn.Sequential(OrderedDict([
-            ('linear1', nn.Linear(256, 256)),
+            ('linear1', nn.Linear(inplanes, inplanes)),
             ('relu1', nn.ReLU(inplace=True)),
-            ('linear2', nn.Linear(256, num_features)),
+            ('linear2', nn.Linear(inplanes, num_features)),
         ]))
         self.fc_beta = nn.Sequential(OrderedDict([
-            ('linear1', nn.Linear(256, 256)),
+            ('linear1', nn.Linear(inplanes, inplanes)),
             ('relu1', nn.ReLU(inplace=True)),
-            ('linear2', nn.Linear(256, num_features)),
+            ('linear2', nn.Linear(inplanes, num_features)),
         ]))
         self._initialize()
 
@@ -520,8 +536,9 @@ class affine(nn.Module):
             bias = bias.unsqueeze(0)
 
         size = x.size()
-        weight = weight.unsqueeze(-1).unsqueeze(-1).expand(size)
-        bias = bias.unsqueeze(-1).unsqueeze(-1).expand(size)
+        #       6,1,512 -> 6,512 -> 6,512,1 -> 6,512,1,1 -> 6,512,h,w
+        weight = weight.squeeze().unsqueeze(-1).unsqueeze(-1).expand(size)
+        bias = bias.squeeze().unsqueeze(-1).unsqueeze(-1).expand(size)
         weight = weight * fusion_mask + 1
         bias = bias * fusion_mask
         return weight * x + bias
