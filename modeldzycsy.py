@@ -473,8 +473,9 @@ class NetG(nn.Module):
         x_t = self.trans_1(x_t)
         # print('3333', x_t.shape)
         # 2 ~ final
+        intepolate_stage = (2, 4, 5, 7)
         for i in range(2, self.fin_stage):
-            if i % 2 == 0 or i == 7: # 2 4 6 7
+            if i in intepolate_stage:
                x = F.interpolate(x, scale_factor=2)
             print('start conv_trans_', i, '......')
             x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
